@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMC File Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .container {
+            margin-left: 220px;
+            padding: 20px;
+        }
+        .folder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .folder-card {
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        .folder-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .folder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .folder-title {
+            font-size: 1.2em;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .folder-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .audio-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .audio-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            gap: 10px;
+        }
+        .audio-item:last-child {
+            border-bottom: none;
+        }
+        .new-folder-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .new-folder-btn:hover {
+            background-color: #2980b9;
+        }
+        .folder-empty {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>CMC</h2>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('folders') }}">Folders</a></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h1>Audio Files</h1>
+        <button class="new-folder-btn" onclick="createNewFolder()">New Folder</button>
+        
+        <div class="folder-grid" id="folderGrid">
+            <!-- Folders will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        async function loadFolders() {
+            try {
+                const response = await fetch('/get-folders');
+                const folders = await response.json();
+                displayFolders(folders);
+            } catch (error) {
+                console.error('Error loading folders:', error);
+            }
+        }
+
+        function displayFolders(folders) {
+            const grid = document.getElementById('folderGrid');
+            grid.innerHTML = '';
+
+            folders.forEach(folder => {
+                const folderEl = document.createElement('div');
+                folderEl.className = 'folder-card';
+                folderEl.dataset.folderId = folder.id;
+                folderEl.innerHTML = `
+                    <div class="folder-header">
+                        <div class="folder-title">
+                            📁 ${folder.name}
+                        </div>
+                        <div class="folder-actions">
+                            <button onclick="editFolder('${folder.id}')">Edit</button>
+                            <button onclick="deleteFolder('${folder.id}')">Delete</button>
+                        </div>
+                    </div>
+                    ${renderAudioList(folder.audios)}
+                `;
+                grid.appendChild(folderEl);
+            });
+        }
+
+        function renderAudioList(audios) {
+            if (!audios || audios.length === 0) {
+                return '<div class="folder-empty">No audio files</div>';
+            }
+
+            return `
+                <ul class="audio-list">
+                    ${audios.map(audio => `
+                        <li class="audio-item" draggable="true" data-audio-id="${audio.id}">
+                            🎵 ${audio.name}
+                            <button onclick="playAudio('${audio.file_path}')">Play</button>
+                            <button onclick="deleteAudio('${audio.id}')">Delete</button>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        async function createNewFolder() {
+            const name = prompt('Enter folder name:');
+            if (!name) return;
+
+            try {
+                const response = await fetch('/create-folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                if (response.ok) {
+                    loadFolders();
+                }
+            } catch (error) {
+                console.error('Error creating folder:', error);
+            }
+        }
+
+        async function editFolder(folderId) {
+            const newName = prompt('Enter new folder name:');
+            if (!newName) return;
+
+            try {
+                const response = await fetch(`/edit-folder/${folderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                });
+
+                if (response.ok) {
+                    loadFolders();
+                }
+            } catch (error) {
+                console.error('Error editing folder:', error);
+            }
+        }
+
+        async function deleteFolder(folderId) {
+            if (!confirm('Are you sure you want to delete this folder?')) return;
+
+            try {
+                const response = await fetch(`/delete-folder/${folderId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadFolders();
+                }
+            } catch (error) {
+                console.error('Error deleting folder:', error);
+            }
+        }
+
+        function playAudio(audioPath) {
+            const audio = new Audio(audioPath);
+            audio.play();
+        }
+
+        // Load folders when page loads
+        document.addEventListener('DOMContentLoaded', loadFolders);
+        
+    </script>
+<script>
+    async function loadSidebarFolders() {
+        try {
+            const response = await fetch('/get-sidebar-folders');
+            const folders = await response.json();
+            const foldersList = document.getElementById('sidebarFolders');
+            
+            foldersList.innerHTML = folders.map(folder => `
+                <li><a href="/folders#${folder.id}">📁 ${folder.name}</a></li>
+            `).join('') + `
+            <li><button class="add-folder-btn" onclick="createNewFolder()">+ New Folder</button></li>`;
+        } catch (error) {
+            console.error('Error loading sidebar folders:', error);
+        }
+    }
+    
+    // Load folders when page loads
+    document.addEventListener('DOMContentLoaded', loadSidebarFolders);
+    
+    // Add this if you want to refresh the sidebar when folders are modified
+    async function createNewFolder() {
+        const name = prompt('Enter folder name:');
+        if (!name) return;
+    
+        try {
+            const response = await fetch('/create-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+    
+            if (response.ok) {
+                loadSidebarFolders();
+                // If we're on the folders page, also reload the main folder grid
+                if (typeof loadFolders === 'function') {
+                    loadFolders();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating folder:', error);
+        }
+    }
+    </script>
+</body>
+</html>

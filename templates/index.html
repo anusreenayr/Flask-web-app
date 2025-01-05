@@ -1,0 +1,58 @@
+index
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMC Linguistic App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>CMC</h2>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('folders') }}">Folders</a></li>
+            <li class="folder-section">
+                <span>Folders</span>
+                <ul id="sidebarFolders">
+                    <div class="folder-grid" id="folderGrid">
+                        <!-- Folders will be populated here -->
+                    </div>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <div class="container">
+        <h1>CMC Linguistic App</h1>
+        
+        <textarea id="inputScript" placeholder="Enter your script here..."></textarea>
+        
+        <div class="controls">
+            <label for="languageSelect">Select Language:</label>
+            <select id="languageSelect" multiple>
+                <option value="hi">Hindi</option>
+                <option value="bn">Bengali</option>
+                <option value="ta">Tamil</option>
+                <option value="gu">Gujarati</option>
+            </select>
+        </div>
+        
+        <div class="buttons">
+            <button id="translateButton">Translate & Generate Audio</button>
+        </div>
+
+        <div class="audio-container">
+            <audio id="audioPlayer" controls>
+                Your browser does not support the audio element.
+            </audio>
+            <button id="saveAudioButton">Save Audio</button>
+        </div>
+        
+        <textarea id="outputScript" placeholder="Translated script will appear here..." readonly></textarea>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
