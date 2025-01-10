@@ -76,14 +76,20 @@
             font-style: italic;
             padding: 10px 0;
         }
+        .sidebar ul {
+            padding: 0;
+            list-style: none;
+        }
+        .sidebar ul li {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>CMC</h2>
-        <ul>
-            <li><a href="{{ url_for('index') }}">Home</a></li>
-            <li><a href="{{ url_for('folders') }}">Folders</a></li>
+        <ul id="sidebarFolders">
+            <!-- Sidebar folders will be populated dynamically -->
         </ul>
     </div>
 
@@ -92,6 +98,9 @@
         <button class="new-folder-btn" onclick="createNewFolder()">New Folder</button>
         
         <div class="folder-grid" id="folderGrid">
+            <button onclick="deleteFolder(1)">Delete Folder</button>
+            <button onclick="deleteAudio(1)">Delete Audio</button>
+
             <!-- Folders will be populated here -->
         </div>
     </div>
@@ -162,6 +171,7 @@
 
                 if (response.ok) {
                     loadFolders();
+                    loadSidebarFolders();
                 }
             } catch (error) {
                 console.error('Error creating folder:', error);
@@ -181,6 +191,7 @@
 
                 if (response.ok) {
                     loadFolders();
+                    loadSidebarFolders();
                 }
             } catch (error) {
                 console.error('Error editing folder:', error);
@@ -188,18 +199,63 @@
         }
 
         async function deleteFolder(folderId) {
-            if (!confirm('Are you sure you want to delete this folder?')) return;
+    if (!confirm('Are you sure you want to delete this folder?')) {
+        return;
+    }
 
+    try {
+        const response = await fetch(`/delete-folder/${folderId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete folder');
+        }
+
+        // Refresh the folders display
+        await loadFolders();
+        await loadSidebarFolders();
+    } catch (error) {
+        console.error('Error deleting folder:', error);
+        alert('Failed to delete folder: ' + error.message);
+    }
+}
+
+async function deleteAudio(audioId) {
+    if (!confirm('Are you sure you want to delete this audio file?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/delete-audio/${audioId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete audio');
+        }
+
+        // Refresh the folders display to show updated content
+        await loadFolders();
+    } catch (error) {
+        console.error('Error deleting audio:', error);
+        alert('Failed to delete audio: ' + error.message);
+    }
+}
+
+        async function loadSidebarFolders() {
             try {
-                const response = await fetch(`/delete-folder/${folderId}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    loadFolders();
-                }
+                const response = await fetch('/get-sidebar-folders');
+                const folders = await response.json();
+                const foldersList = document.getElementById('sidebarFolders');
+                
+                foldersList.innerHTML = folders.map(folder => `
+                    <li><a href="/folders#${folder.id}">📁 ${folder.name}</a></li>
+                `).join('');
             } catch (error) {
-                console.error('Error deleting folder:', error);
+                console.error('Error loading sidebar folders:', error);
             }
         }
 
@@ -208,52 +264,11 @@
             audio.play();
         }
 
-        // Load folders when page loads
-        document.addEventListener('DOMContentLoaded', loadFolders);
-        
-    </script>
-<script>
-    async function loadSidebarFolders() {
-        try {
-            const response = await fetch('/get-sidebar-folders');
-            const folders = await response.json();
-            const foldersList = document.getElementById('sidebarFolders');
-            
-            foldersList.innerHTML = folders.map(folder => `
-                <li><a href="/folders#${folder.id}">📁 ${folder.name}</a></li>
-            `).join('') + `
-            <li><button class="add-folder-btn" onclick="createNewFolder()">+ New Folder</button></li>`;
-        } catch (error) {
-            console.error('Error loading sidebar folders:', error);
-        }
-    }
-    
-    // Load folders when page loads
-    document.addEventListener('DOMContentLoaded', loadSidebarFolders);
-    
-    // Add this if you want to refresh the sidebar when folders are modified
-    async function createNewFolder() {
-        const name = prompt('Enter folder name:');
-        if (!name) return;
-    
-        try {
-            const response = await fetch('/create-folder', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-    
-            if (response.ok) {
-                loadSidebarFolders();
-                // If we're on the folders page, also reload the main folder grid
-                if (typeof loadFolders === 'function') {
-                    loadFolders();
-                }
-            }
-        } catch (error) {
-            console.error('Error creating folder:', error);
-        }
-    }
+        // Load folders and sidebar when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFolders();
+            loadSidebarFolders();
+        });
     </script>
 </body>
 </html>
