@@ -1,31 +1,24 @@
-index
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMC Linguistic App</title>
+    <title>Hospital Management studies and Staff training and Development </title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="sidebar">
-        <h2>CMC</h2>
+        <h2>Hospital Management Studies</h2>
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
             <li><a href="{{ url_for('folders') }}">Folders</a></li>
-            <li class="folder-section">
-                <span>Folders</span>
-                <ul id="sidebarFolders">
-                    <div class="folder-grid" id="folderGrid">
-                        <!-- Folders will be populated here -->
-                    </div>
-                </ul>
-            </li>
+            <ul id="sidebarFolders">
+                <!-- Folders will be populated here -->
+            </ul>
         </ul>
     </div>
     <div class="container">
-        <h1>CMC Linguistic App</h1>
+        <h1>Hospital Management Studies and Staff Training and Development</h1>
         
         <textarea id="inputScript" placeholder="Enter your script here..."></textarea>
         
