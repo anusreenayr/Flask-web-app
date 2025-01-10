@@ -25,7 +25,7 @@ os.makedirs(TRANSLATIONS_DIR, exist_ok=True)
 class Folder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    audios = db.relationship('Audio', backref='folder', lazy=True)
+    audios = db.relationship('Audio', backref='folder', lazy=True, cascade='all, delete-orphan')
 
 class Audio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -64,54 +64,94 @@ def get_folders():
 
 @app.route('/create-folder', methods=['POST'])
 def create_folder():
-    data = request.json
-    new_folder = Folder(name=data['name'])
-    db.session.add(new_folder)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        data = request.json
+        new_folder = Folder(name=data['name'])
+        db.session.add(new_folder)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/edit-folder/<int:folder_id>', methods=['PUT'])
 def edit_folder(folder_id):
-    folder = Folder.query.get_or_404(folder_id)
-    data = request.json
-    folder.name = data['name']
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        folder = Folder.query.get_or_404(folder_id)
+        data = request.json
+        folder.name = data['name']
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/delete-folder/<int:folder_id>', methods=['DELETE'])
 def delete_folder(folder_id):
-    folder = Folder.query.get_or_404(folder_id)
-    db.session.delete(folder)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        folder = Folder.query.get_or_404(folder_id)
+        
+        # Delete all associated audio files first
+        for audio in folder.audios:
+            try:
+                # Delete the physical audio file if it exists
+                if audio.file_path and os.path.exists(os.path.join(TRANSLATIONS_DIR, audio.file_path)):
+                    os.remove(os.path.join(TRANSLATIONS_DIR, audio.file_path))
+            except Exception as e:
+                print(f"Error deleting audio file: {str(e)}")
+        
+        # Delete the folder (will automatically delete associated audios due to cascade)
+        db.session.delete(folder)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Folder deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/save-audio', methods=['POST'])
 def save_audio():
-    data = request.json
-    new_audio = Audio(
-        name=data['name'],
-        file_path=data['audioPath'],
-        folder_id=data['folderId']
-    )
-    db.session.add(new_audio)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        data = request.json
+        new_audio = Audio(
+            name=data['name'],
+            file_path=data['audioPath'],
+            folder_id=data['folderId']
+        )
+        db.session.add(new_audio)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/edit-audio/<int:audio_id>', methods=['PUT'])
 def edit_audio(audio_id):
-    audio = Audio.query.get_or_404(audio_id)
-    data = request.json
-    audio.name = data['name']
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        audio = Audio.query.get_or_404(audio_id)
+        data = request.json
+        audio.name = data['name']
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/delete-audio/<int:audio_id>', methods=['DELETE'])
 def delete_audio(audio_id):
-    audio = Audio.query.get_or_404(audio_id)
-    db.session.delete(audio)
-    db.session.commit()
-    return jsonify({'success': True})
-
+    try:
+        audio = Audio.query.get_or_404(audio_id)
+        
+        # Delete the physical audio file if it exists
+        if audio.file_path and os.path.exists(os.path.join(TRANSLATIONS_DIR, audio.file_path)):
+            os.remove(os.path.join(TRANSLATIONS_DIR, audio.file_path))
+        
+        # Delete the database record
+        db.session.delete(audio)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Audio deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/move-audio', methods=['POST'])
 def move_audio():
@@ -168,4 +208,4 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host="0.0.0.0", port=5001)
