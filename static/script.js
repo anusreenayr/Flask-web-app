@@ -1,5 +1,30 @@
 let currentAudioData = null;
 
+// Language options configuration
+const SUPPORTED_LANGUAGES = [
+    { value: 'en', label: 'English' },
+    { value: 'hi', label: 'Hindi' },
+    { value: 'bn', label: 'Bengali' },
+    { value: 'gu', label: 'Gujarati' },
+    { value: 'ta', label: 'Tamil' },
+    { value: 'ml', label: 'Malayalam' },
+    { value: 'kn', label: 'Kannada' },
+    { value: 'te', label: 'Telugu' },
+    { value: 'or', label: 'Odia' }
+];
+
+// Initialize language select options
+function initializeLanguageSelect() {
+    const languageSelect = document.getElementById('languageSelect');
+    SUPPORTED_LANGUAGES.forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang.value;
+        option.textContent = lang.label;
+        languageSelect.appendChild(option);
+    });
+}
+
+// Audio Translation and Saving
 document.getElementById('translateButton').addEventListener('click', async () => {
     const script = document.getElementById('inputScript').value;
     const selectedLanguages = Array.from(document.getElementById('languageSelect').selectedOptions).map(opt => opt.value);
@@ -25,7 +50,8 @@ document.getElementById('translateButton').addEventListener('click', async () =>
                 if (result.error) {
                     outputArea.value += `Language: ${result.language}\nError: ${result.error}\n\n`;
                 } else {
-                    outputArea.value += `Language: ${result.language}\n`;
+                    const languageLabel = SUPPORTED_LANGUAGES.find(lang => lang.value === result.language)?.label || result.language;
+                    outputArea.value += `Language: ${languageLabel}\n`;
                     outputArea.value += `Translation: ${result.translation}\n`;
                     outputArea.value += `Audio File: ${result.audio_file}\n\n`;
 
@@ -103,7 +129,7 @@ async function saveAudioToFolder(button, audioName) {
         if (response.ok) {
             alert('Audio saved successfully!');
             modal.remove();
-            loadFolders(); // Refresh the folder view
+            loadFolders();
         } else {
             alert('Error saving audio');
         }
@@ -113,15 +139,15 @@ async function saveAudioToFolder(button, audioName) {
     }
 }
 
-// Load sidebar folders
+// Folder Management Functions
 async function loadSidebarFolders() {
     try {
-        const response = await fetch('/get-sidebar-folders');
+        const response = await fetch('/get-folders');
         const folders = await response.json();
         const foldersList = document.getElementById('sidebarFolders');
         
         foldersList.innerHTML = folders.map(folder => `
-            <li><a href="/folders#${folder.id}">📁 ${folder.name}</a></li>
+            <li><a href="#folder-${folder.id}">📁 ${folder.name}</a></li>
         `).join('') + `
         <li><button class="add-folder-btn" onclick="createNewFolder()">+ New Folder</button></li>`;
     } catch (error) {
@@ -129,9 +155,6 @@ async function loadSidebarFolders() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', loadSidebarFolders);
-
-// static/folders.js
 async function loadFolders() {
     try {
         const response = await fetch('/get-folders');
@@ -211,7 +234,6 @@ async function saveEdit(element, newValue) {
 
     try {
         if (folderId) {
-            // Editing folder name
             const response = await fetch(`/edit-folder/${folderId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -219,7 +241,6 @@ async function saveEdit(element, newValue) {
             });
             success = response.ok;
         } else if (audioId) {
-            // Editing audio name
             const response = await fetch(`/edit-audio/${audioId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -231,9 +252,9 @@ async function saveEdit(element, newValue) {
         if (success) {
             element.textContent = newValue;
             element.style.display = 'inline';
-            element.previousSibling.remove(); // Remove input
-            loadFolders(); // Refresh the display
-            loadSidebarFolders(); // Update sidebar
+            element.previousSibling.remove();
+            loadFolders();
+            loadSidebarFolders();
         } else {
             throw new Error('Failed to save changes');
         }
@@ -241,7 +262,7 @@ async function saveEdit(element, newValue) {
         console.error('Error saving edit:', error);
         alert('Failed to save changes');
         element.style.display = 'inline';
-        element.previousSibling.remove(); // Remove input
+        element.previousSibling.remove();
     }
 }
 
@@ -312,7 +333,7 @@ function playAudio(audioPath) {
     audio.play();
 }
 
-// Drag and drop functionality
+// Drag and Drop Functionality
 let draggedItem = null;
 
 document.addEventListener('dragstart', (e) => {
@@ -380,24 +401,9 @@ document.addEventListener('drop', async (e) => {
     }
 });
 
-// Load sidebar folders
-async function loadSidebarFolders() {
-    try {
-        const response = await fetch('/get-folders');
-        const folders = await response.json();
-        const foldersList = document.getElementById('sidebarFolders');
-        
-        foldersList.innerHTML = folders.map(folder => `
-            <li><a href="#folder-${folder.id}">📁 ${folder.name}</a></li>
-        `).join('') + `
-        <li><button class="add-folder-btn" onclick="createNewFolder()">+ New Folder</button></li>`;
-    } catch (error) {
-        console.error('Error loading sidebar folders:', error);
-    }
-}
-
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    initializeLanguageSelect();
     loadFolders();
     loadSidebarFolders();
 });
