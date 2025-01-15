@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Management studies and Staff training and Development </title>
+    <title>Department of Hospital Management studies and Staff training and Development </title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .copyright {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            color: #666;
+            text-align: right;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2>Hospital Management Studies</h2>
+        <h2>Department of Hospital Management Studies</h2>
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
             <li><a href="{{ url_for('folders') }}">Folders</a></li>
@@ -18,17 +28,22 @@
         </ul>
     </div>
     <div class="container">
-        <h1>Hospital Management Studies and Staff Training and Development</h1>
+        <h1>Department Of Hospital Management Studies and Staff Training and Development</h1>
         
         <textarea id="inputScript" placeholder="Enter your script here..."></textarea>
         
         <div class="controls">
             <label for="languageSelect">Select Language:</label>
             <select id="languageSelect" multiple>
+                <option value="en">English</option>
                 <option value="hi">Hindi</option>
                 <option value="bn">Bengali</option>
-                <option value="ta">Tamil</option>
                 <option value="gu">Gujarati</option>
+                <option value="ta">Tamil</option>
+                <option value="ml">Malayalam</option>                
+                <option value="kn">Kannada</option>
+                <option value="te">Telugu</option>
+                <option value="or">Odia</option>
             </select>
         </div>
         
@@ -44,6 +59,10 @@
         </div>
         
         <textarea id="outputScript" placeholder="Translated script will appear here..." readonly></textarea>
+    </div>
+    
+    <div class="copyright">
+        © 2025 Christian Medical College. All rights reserved.
     </div>
     
     <script src="{{ url_for('static', filename='script.js') }}"></script>
